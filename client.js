@@ -1,32 +1,26 @@
 /* globals twoFactor */
 
-const state = new ReactiveDict('twoFactor');
+const state = new ReactiveDict("twoFactor");
 
-state.set('user', '');
-state.set('password', '');
-state.set('verifying', false);
+state.set("user", "");
+state.set("password", "");
+state.set("verifying", false);
 
 const getSelector = user => {
-  if (typeof user === 'string') {
-    if (user.indexOf('@') === -1) {
-      return { username: user };
-    }
-    return { email: user };
-  }
-  return user;
+  return { username: user };
 };
 
 const callbackHandler = (cb, handlerCb) => {
   return error => {
     if (error) {
-      return typeof cb === 'function' && cb(error);
+      return typeof cb === "function" && cb(error);
     }
 
-    if (typeof handlerCb === 'function') {
+    if (typeof handlerCb === "function") {
       handlerCb();
     }
 
-    return typeof cb === 'function' && cb();
+    return typeof cb === "function" && cb();
   };
 };
 
@@ -35,62 +29,62 @@ const getAuthCode = (user, password, cb) => {
   const hashedPassword = Accounts._hashPassword(password);
 
   const callback = callbackHandler(cb, () => {
-    state.set('verifying', true);
-    state.set('user', user);
-    state.set('password', hashedPassword);
+    state.set("verifying", true);
+    state.set("user", user);
+    state.set("password", hashedPassword);
   });
 
   Meteor.call(
-    'twoFactor.getAuthenticationCode',
+    "twoFactor.getAuthenticationCode",
     selector,
     hashedPassword,
-    callback,
+    callback
   );
 };
 
 const getNewAuthCode = cb => {
-  const selector = getSelector(state.get('user'));
-  const password = state.get('password');
+  const selector = getSelector(state.get("user"));
+  const password = state.get("password");
   const callback = callbackHandler(cb);
 
-  Meteor.call('twoFactor.getAuthenticationCode', selector, password, callback);
+  Meteor.call("twoFactor.getAuthenticationCode", selector, password, callback);
 };
 
 const verifyAndLogin = (code, cb) => {
-  const selector = getSelector(state.get('user'));
+  const selector = getSelector(state.get("user"));
 
   Accounts.callLoginMethod({
-    methodName: 'twoFactor.verifyCodeAndLogin',
+    methodName: "twoFactor.verifyCodeAndLogin",
     methodArguments: [
       {
         user: selector,
-        password: state.get('password'),
-        code,
-      },
+        password: state.get("password"),
+        code
+      }
     ],
     userCallback: callbackHandler(cb, () => {
-      state.set('verifying', false);
-      state.set('user', '');
-      state.set('password', '');
-    }),
+      state.set("verifying", false);
+      state.set("user", "");
+      state.set("password", "");
+    })
   });
 };
 
-const isVerifying = () => state.get('verifying');
+const isVerifying = () => state.get("verifying");
 
 const abort = cb => {
-  const selector = getSelector(state.get('user'));
-  const password = state.get('password');
+  const selector = getSelector(state.get("user"));
+  const password = state.get("password");
 
   const callback = callbackHandler(cb, () => {
     state.set({
       verifying: false,
-      user: '',
-      password: '',
+      user: "",
+      password: ""
     });
   });
 
-  Meteor.call('twoFactor.abort', selector, password, callback);
+  Meteor.call("twoFactor.abort", selector, password, callback);
 };
 
 twoFactor.getAuthCode = getAuthCode;
